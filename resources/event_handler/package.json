@@ -1,0 +1,20 @@
+{
+  "name": "event_handler",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.76",
+    "@types/jest": "^26.0.10",
+    "@types/node": "^10.17.27",
+    "ts-node": "^9.0.0",
+    "typescript": "^3.9.9"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.16.0",
+    "@aws-sdk/client-sfn": "^3.16.0",
+    "source-map-support": "^0.5.16"
+  }
+}

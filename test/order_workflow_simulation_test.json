@@ -1,0 +1,55 @@
+{
+  "events": [
+    {
+      "source": "order",
+      "detailType": "Order Placed",
+      "detail": {
+        "id": "order-12345",
+        "items": [
+          { "id": "dhfhjdhfks", "quantity": "1" },
+          { "id": "ahbgdtfuio", "quantity": "1" }
+        ],
+        "customer": {
+          "id": "kdjfniwyf8sbfdjsh"
+        }
+      },
+      "wait": "5"
+    },
+    {
+      "source": "order",
+      "detailType": "Order Confirmed",
+      "detail": {
+        "id": "order-12345",
+        "payment": {
+          "reference": "abghdftyui",
+          "amount": "36.99",
+          "currency": "EUR"
+        }
+      },
+      "wait": "5"
+    },
+    {
+      "source": "order",
+      "detailType": "Order Accepted",
+      "detail": {
+        "id": "order-12345",
+        "partner": {
+          "id": "partner-12345"
+        }
+      },
+      "wait": "5"
+    },
+    {
+      "source": "car",
+      "detailType": "Order Delivered",
+      "detail": {
+        "id": "order-12345",
+        "price": {
+          "amount": 10000,
+          "currency": "EUR"
+        }
+      },
+      "wait": "1"
+    }
+  ]
+}
