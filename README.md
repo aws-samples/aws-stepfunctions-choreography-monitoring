@@ -43,7 +43,6 @@ This repository already contains CDK stack `ChoreographyInsightsStack` with nece
     ```
 4. Bind the `Choreography` instance to `ChoreographyInsights`. This will add the necessary permission to allow the two constructs to use each other resources. For more information, see [ChoreographyInsights](#choreographyinsights)
     ```ts
-    //Bind the choreography to the 'ChoreographyInsights' construct
     insights.addChoreography(orderChoreography);
     ```
 
@@ -57,8 +56,18 @@ You can use [ChoreographyState](#choreographystate) and [ChoreographyStateBuilde
 Using ChoreographyState objects and other Step Functions states such as Choice, Parallel, Fail, Success you have enough flexibility to model workflows as Step Functions state machine definitions (IChainable).
 
 `ChoreographyStateBuilder` construct facilitate the creation of ChoreographyState objects. You only need to specify the DynamoDB Table which is used to manage Task Tokens reads and writes.
+### Example #1 - Marketplace Order processing workflow
+This workflow process orders for a marketplace. It receives new orders, wait for confirmation, and forward requests to service providers to fulfil the order. Here is the happy flow event sequence:
+1. Order Placed: a new order has been placed. The state machine is waiting for the confermation
+2. Order Confirmed: the order has been confirmed by sending a request to the service provider. The state machine is waiting for the service provider to accept the order.
+3. Order Accepted: the service provider accepted the order. the state machine will wait for the order delivery aknowledgement
+4. Order Rejected: the service provider rejected the order. Marketplace should cancel the order. The state machine will wait for the Order Canceled event
+5. Order Canceled: The customer did not confirm the order or the service provider did not complete delivery. The state machine reach final state OrderCanceled.
+6. Order Delivered: When the service provider accept the order it proceeds with delivery and when it's done provide aknowledgement with an event. The state machine reach final state OrderCompleted.
 
-Here is an example for a marketplace order processing workflow: 
+The following image shows a formal representation of the process using a finite state machine and the corresponding AWS Step Functions state machine.
+![Order state machine](images/order-example.png)
+Here is the CDK code - that uses constructors provided in this project - to monitor the choreography: 
 ```ts
 //Provision resources to control the state machine execution start and transitions
 const insights = new ChoreographyInsights(this, "Choreography");
@@ -204,13 +213,12 @@ This is a convenient Construct that enables to run simulations for testing purpo
 
 You simply add this to your stack
 ```ts
-//Workflow simulation
 new WorkflowSimulationStateMachine(this, "WorkflowSilumation", { eventBus: eventBus });
 ```
 
 You can see you need to specify an event bus where to publish events.
 
-Then you can simulate a workflow by starting a new execution
+Then you can simulate a workflow by starting a new execution, using the Simulation state machine ARN
 
 ```console
 foo@bar:~$ aws stepfunctions start-execution --state-machine-arn arn:aws:states:<region>:<accountId>:stateMachine:<workflowId> --input file://test.json
