@@ -35,7 +35,7 @@ jobs:
       
       # Configure AWS credentials
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@V1
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::737116906827:role/GithubAwsStepFunctionsChoreographyInsights-Role
           role-session-name: samplerolesession
