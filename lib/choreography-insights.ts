@@ -13,15 +13,16 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 // SPDX-License-Identifier: MIT-0
-import * as cdk from "@aws-cdk/core";
-import { AttributeType, Table, TableEncryption } from "@aws-cdk/aws-dynamodb";
-import { StateMachine, StateMachineType, TaskStateBase, IChainable, State } from "@aws-cdk/aws-stepfunctions";
-import { RetentionDays } from "@aws-cdk/aws-logs";
-import { NodejsFunction } from "@aws-cdk/aws-lambda-nodejs";
-import { IFunction, Tracing } from '@aws-cdk/aws-lambda';
-import { EventPattern, EventBus, Rule, RuleTargetInput, EventField } from '@aws-cdk/aws-events';
-import { ManagedPolicy } from '@aws-cdk/aws-iam';
-import { LambdaFunction } from "@aws-cdk/aws-events-targets";
+import { Construct } from "constructs";
+import { RemovalPolicy } from "aws-cdk-lib";
+import { AttributeType, Table, TableEncryption } from "aws-cdk-lib/aws-dynamodb";
+import { StateMachine, StateMachineType, TaskStateBase, IChainable, State } from "aws-cdk-lib/aws-stepfunctions";
+import { RetentionDays } from "aws-cdk-lib/aws-logs";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { IFunction, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { EventPattern, EventBus, Rule, RuleTargetInput, EventField } from 'aws-cdk-lib/aws-events';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { ChoreographyState, ChoreographyStateBuilder } from "./choreography-state";
 
 export interface ChoreographyInsightsProps {
@@ -47,7 +48,7 @@ export interface ChoreographyEvent {
  * - A lambda function to handle events by reading a Task Token from DynamoDB and invoking Step Functions SendTaskSuccess to resume execution
  * The Construct allows to monitor multiple Choreographies
  */
-export class ChoreographyInsights extends cdk.Construct {
+export class ChoreographyInsights extends Construct {
 
   public readonly taskTokensTable: Table;
   public readonly defaultStateBuilder: ChoreographyStateBuilder;
@@ -57,7 +58,7 @@ export class ChoreographyInsights extends cdk.Construct {
   private eventBus: EventBus;
   private choreographyList: Choreography[] = new Array();
 
-  constructor(scope: cdk.Construct, id: string, props?: ChoreographyInsightsProps) {
+  constructor(scope: Construct, id: string, props?: ChoreographyInsightsProps) {
     super(scope, id);
 
     this.taskTokensTable = new Table(this, 'TaskTokensTable', {
@@ -74,7 +75,8 @@ export class ChoreographyInsights extends cdk.Construct {
       // The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
       // the new table, and it will remain in your account until manually deleted. By setting the policy to 
       // DESTROY, cdk destroy will delete the table (even if it has data in it)
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code,
+      pointInTimeRecovery: true
     });
 
     this.eventHandlerTask = this.eventHandlerFunction(this.taskTokensTable);
@@ -188,13 +190,13 @@ export class ChoreographyInsights extends cdk.Construct {
  * Construct that models a choreography definition as a Step Functions state machine.
  * It checks that the definition provided in the properties contains only allowed State types (i.e. Task states must be instanceof ChoreographyState)
  */
-export class Choreography extends cdk.Construct {
+export class Choreography extends Construct {
 
   public readonly stateMachine: StateMachine;
   public readonly startEvent: ChoreographyEvent;
   public readonly events: ChoreographyEvent[];
 
-  constructor(scope: cdk.Construct, id: string, props: ChoreographyProps) {
+  constructor(scope: Construct, id: string, props: ChoreographyProps) {
     super(scope, id);
     this.checkDefinition(props.definition);
     this.startEvent = props.startEvent;

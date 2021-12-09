@@ -13,10 +13,10 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 // SPDX-License-Identifier: MIT-0
-import * as cdk from "@aws-cdk/core";
-import { Table } from "@aws-cdk/aws-dynamodb";
-import { CallAwsService } from "@aws-cdk/aws-stepfunctions-tasks";
-import { JsonPath } from "@aws-cdk/aws-stepfunctions";
+import { Construct } from "constructs";
+import { Table } from "aws-cdk-lib/aws-dynamodb";
+import { CallAwsService } from "aws-cdk-lib/aws-stepfunctions-tasks";
+import { JsonPath } from "aws-cdk-lib/aws-stepfunctions";
 
 /**
  * Properties to initialize a ChoreographyStateBuilder
@@ -41,7 +41,7 @@ export class ChoreographyState extends CallAwsService {
   entityId: string;
   eventName: string;
 
-  constructor(scope: cdk.Construct, builder: ChoreographyStateBuilder) {
+  constructor(scope: Construct, builder: ChoreographyStateBuilder) {
     super(scope, builder.name, {
       service: 'dynamodb',
       action: 'updateItem.waitForTaskToken',
@@ -69,14 +69,14 @@ export class ChoreographyState extends CallAwsService {
 /**
  * Builder class for Choreography States.
  */
-export class ChoreographyStateBuilder extends cdk.Construct {
+export class ChoreographyStateBuilder extends Construct {
   private readonly _taskTokenTable: Table;
-  private readonly _scope: cdk.Construct;
+  private readonly _scope: Construct;
   private _name: string;
   private _entityId: string = JsonPath.stringAt("$$.Execution.Input.detail.id");
   private _eventName: string = "Default";
 
-  constructor(scope: cdk.Construct, id: string, props: ChoreographyStateBuilderProps) {
+  constructor(scope: Construct, id: string, props: ChoreographyStateBuilderProps) {
     super(scope, id);
     this._scope = scope;
     this._taskTokenTable = props.taskTokenTable;

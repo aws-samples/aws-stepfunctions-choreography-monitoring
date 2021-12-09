@@ -13,15 +13,16 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 // SPDX-License-Identifier: MIT-0
-import * as cdk from '@aws-cdk/core';
-import {  Choice, Succeed, Fail, Condition, Parallel, IChainable, JsonPath } from "@aws-cdk/aws-stepfunctions";
-import { EventBus } from "@aws-cdk/aws-events";
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import {  Choice, Succeed, Fail, Condition, Parallel, IChainable, JsonPath } from "aws-cdk-lib//aws-stepfunctions";
+import { EventBus } from "aws-cdk-lib/aws-events";
 import { WorkflowSimulationStateMachine } from './workflow-simulation';
 import { Choreography, ChoreographyInsights } from './choreography-insights';
 import { ChoreographyStateBuilder } from './choreography-state';
 export class ChoreographyInsightsStack extends cdk.Stack {
   
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const eventBus = new EventBus(this, "EventBus");
