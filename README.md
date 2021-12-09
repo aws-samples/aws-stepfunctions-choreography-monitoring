@@ -8,7 +8,7 @@ The project uses AWS CDK to create Constructs that facilitate the provisioning o
 
 1. An [AWS Account](https://portal.aws.amazon.com/gp/aws/developer/registration/index.html)
 2. [AWS CLI v2.1.35 installed](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) and [configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) with Admin privileges
-3. [AWS CDK v1.128.0 installed](https://docs.aws.amazon.com/cdk/latest/guide/getting_started.html#getting_started_install)
+3. [AWS CDK v2.0.0 installed](https://docs.aws.amazon.com/cdk/latest/guide/getting_started.html#getting_started_install)
 4. [NodeJS v12.x installed](https://nodejs.org/en/download/package-manager/)
 
 ## Quickstart Installation
