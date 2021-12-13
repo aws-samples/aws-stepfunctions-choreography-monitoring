@@ -1,0 +1,15 @@
+{
+  "name": "event_handler",
+  "version": "1.0.0",
+  "description": "Function that handles events emitted from choreographed services. The Function uses the input event to retrieve Task Tokens from DynamoDB and resume a Step Functions state machine execution ",
+  "main": "app.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Vito De Giosa",
+  "license": "MIT-0",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.16.0",
+    "@aws-sdk/client-sfn": "^3.16.0"
+  }
+}

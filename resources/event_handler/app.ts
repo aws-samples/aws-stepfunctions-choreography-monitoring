@@ -23,9 +23,10 @@ const sfn = new SFN({});
 const taskTokenTableName = process.env.TASK_TOKENS_TABLE_NAME;
 
 export const handler = async (event: any): Promise<any> => {
-    console.log("Event coming from Event Bridge. Sending feedback to Step Functions...");
-    console.log(JSON.stringify(event));
-    console.log("event name: " + event.eventName);
+  console.info("Event coming from Event Bridge. Sending feedback to Step Functions...");
+  console.info(`Event name: ${event.eventName}, EntityId: ${event.entityId}.`);
+  
+  try {
     const res = await dynamoDB.query({
       TableName: taskTokenTableName,
       KeyConditionExpression: 'entityId = :hkey',
@@ -35,7 +36,7 @@ export const handler = async (event: any): Promise<any> => {
     });
     if(res.Items && res.Items.length > 0) {
       if(res.Items.length == 1) {
-        console.log("Single event state");
+        console.debug("Single event state");
         await sfn.sendTaskSuccess({
           taskToken: res.Items[0].taskToken.S,
           output: JSON.stringify(event)
@@ -45,7 +46,7 @@ export const handler = async (event: any): Promise<any> => {
           body: 'OK'
         };
       } else {
-        console.log("Parallel event state");
+        console.debug("Parallel event state");
         let executionArn;
         for(let i=0; i<res.Items.length; i++) {
           if(res.Items[i].eventName.S === "Default") {
@@ -72,15 +73,15 @@ export const handler = async (event: any): Promise<any> => {
           executionArn: executionArn,
           error: "500",
           cause: `Unexpected event ${event.eventName} for EntityId: ${event.entityId}.`
-        })/*.sendTaskFailure({
-          taskToken: res.Items[res.Items.length-2].taskToken.S,
-          error: "500",
-          cause: `Unexpected event ${event.eventName} for EntityId: ${event.entityId}.`
-        });*/
+        });
         return {
           statusCode: 200,
           body: 'OK'
         };
       }
     }
+  } catch(e) {
+    console.error(`Error processing event ${event.eventName} for execution ${event.entityId}. ${JSON.stringify(e.stack)}`);
+    throw e;
+  }
 }
