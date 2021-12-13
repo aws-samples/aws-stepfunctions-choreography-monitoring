@@ -40,6 +40,24 @@ jobs:
           role-to-assume: arn:aws:iam::737116906827:role/GithubAwsStepFunctionsChoreographyInsights-Role
           role-session-name: samplerolesession
           aws-region: ${{ env.AWS_REGION }}
+          
+      - name: AWS CDK GitHub Actions
+        uses: youyo/aws-cdk-github-actions@v2.1.1
+        with:
+          # AWS CDK stack name to execute.
+          # cdk_stack: # optional, default is *
+          # AWS CDK version to install.
+          # cdk_version: # optional, default is latest
+          # AWS CDK subcommand to execute.
+          cdk_subcommand: synth 
+          # AWS CDK subcommand arguments.
+          # cdk_args: # optional
+          # AWS CDK working directory.
+          # working_dir: # optional, default is .
+          # Whether or not to comment on pull requests.
+          # actions_comment: # optional, default is true
+          # Enable debug-log
+          # debug_log: # optional
 
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
