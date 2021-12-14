@@ -19,7 +19,9 @@ import * as cdk from '@aws-cdk/core';
 import { ChoreographyInsightsStack } from '../lib/choreography-insights-stack';
 
 const app = new cdk.App();
-new ChoreographyInsightsStack(app, 'ChoreographyInsightsStack', {
+let stackName = app.node.tryGetContext('stackName') || 'ChoreographyInsightsStack';
+
+new ChoreographyInsightsStack(app, stackName, {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
