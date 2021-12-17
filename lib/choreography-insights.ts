@@ -14,24 +14,35 @@
 */
 // SPDX-License-Identifier: MIT-0
 import * as cdk from "@aws-cdk/core";
-import { AttributeType, Table, TableEncryption } from "@aws-cdk/aws-dynamodb";
+import { AttributeType, BillingMode, Table, TableEncryption } from "@aws-cdk/aws-dynamodb";
 import { StateMachine, StateMachineType, TaskStateBase, IChainable, State } from "@aws-cdk/aws-stepfunctions";
 import { RetentionDays } from "@aws-cdk/aws-logs";
 import { NodejsFunction } from "@aws-cdk/aws-lambda-nodejs";
 import { IFunction, Tracing } from '@aws-cdk/aws-lambda';
 import { EventPattern, EventBus, Rule, RuleTargetInput, EventField } from '@aws-cdk/aws-events';
-import { ManagedPolicy } from '@aws-cdk/aws-iam';
+import { ManagedPolicy, Policy, Role, PolicyStatement, ServicePrincipal, PolicyDocument } from '@aws-cdk/aws-iam';
 import { LambdaFunction } from "@aws-cdk/aws-events-targets";
 import { ChoreographyState, ChoreographyStateBuilder } from "./choreography-state";
+import { Duration, Stack } from "@aws-cdk/core";
 
 export interface ChoreographyInsightsProps {
-  eventBus: EventBus
+  eventBus: EventBus,
+  /**
+   * How long, in days, the log contents will be retained.
+   *
+   * To retain all logs, set this value to RetentionDays.INFINITE.
+   *
+   * @default RetentionDays.ONE_YEAR
+   * @stability stable
+   */
+  logRetention?: RetentionDays
 }
 
 export interface ChoreographyProps {
   definition: IChainable;
   startEvent: ChoreographyEvent;
   events: ChoreographyEvent[];
+  timeout?: Duration
 }
 
 export interface ChoreographyEvent {
@@ -56,9 +67,14 @@ export class ChoreographyInsights extends cdk.Construct {
   private readonly initWorkflowTask: IFunction;
   private eventBus: EventBus;
   private choreographyList: Choreography[] = new Array();
+  private readonly logRetention: RetentionDays;
+  private readonly lambdaBaseExecutionRolePolicy: ManagedPolicy;
+  private readonly logRetentionExecutionRolePolicy: ManagedPolicy;
 
   constructor(scope: cdk.Construct, id: string, props?: ChoreographyInsightsProps) {
     super(scope, id);
+
+    this.logRetention = props?.logRetention || RetentionDays.ONE_YEAR;
 
     this.taskTokensTable = new Table(this, 'TaskTokensTable', {
       partitionKey: {
@@ -74,8 +90,12 @@ export class ChoreographyInsights extends cdk.Construct {
       // The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
       // the new table, and it will remain in your account until manually deleted. By setting the policy to 
       // DESTROY, cdk destroy will delete the table (even if it has data in it)
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code,
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true
     });
+
+    this.lambdaBaseExecutionRolePolicy = this.basicLambdaExecutionRolePolicy();
 
     this.eventHandlerTask = this.eventHandlerFunction(this.taskTokensTable);
     this.initWorkflowTask = this.initWorkflowFunction(this.taskTokensTable);
@@ -147,11 +167,13 @@ export class ChoreographyInsights extends cdk.Construct {
       environment: {
         TASK_TOKENS_TABLE_NAME: taskTokensTable.tableName
       },
-      logRetention: RetentionDays.TWO_WEEKS,
-      tracing: Tracing.ACTIVE
+      reservedConcurrentExecutions: 20,
+      role: new Role(this, 'CustomEventHandlerExecutionRole', {
+        assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [ this.lambdaBaseExecutionRolePolicy ]
+      }),
+      retryAttempts: 2
     });
-    const cwManagedPolicy = ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLambdaInsightsExecutionRolePolicy');
-    eventHandler.role?.addManagedPolicy(cwManagedPolicy);
     taskTokensTable.grantReadWriteData(eventHandler);
     return eventHandler;
   }
@@ -166,16 +188,29 @@ export class ChoreographyInsights extends cdk.Construct {
     const initWorkflowHandler = new NodejsFunction(this, "InitWorkflowHandler", {
       entry: __dirname + "/../resources/initialize_workflow/app.ts", // accepts .js, .jsx, .ts and .tsx files
       handler: 'handler',
-      logRetention: RetentionDays.TWO_WEEKS,
       environment: {
         TASK_TOKENS_TABLE_NAME: taskTokensTable.tableName
       },
-      tracing: Tracing.ACTIVE
+      reservedConcurrentExecutions: 5,
+      role: new Role(this, 'CustomInitWorkflowExecutionRole', {
+        assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [ this.lambdaBaseExecutionRolePolicy ]
+      }),
+      retryAttempts: 2
     });
-    const cwManagedPolicy = ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLambdaInsightsExecutionRolePolicy');
-    initWorkflowHandler.role?.addManagedPolicy(cwManagedPolicy);
     taskTokensTable.grantWriteData(initWorkflowHandler);
     return initWorkflowHandler;
+  }
+
+  private basicLambdaExecutionRolePolicy(): ManagedPolicy {
+    return new ManagedPolicy(this, "CustomBasicLambdaExecuctionRolePolicy", {
+      statements: [
+        new PolicyStatement({
+          actions: [ "logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+          resources: [ `arn:aws:logs:${Stack.of(this).region}:${Stack.of(this).account}:log-group:/aws/lambda/${Stack.of(this).stackName}*:*` ]
+        })
+      ]
+    })
   }
 
   private getEntityId(event: ChoreographyEvent): string { 
@@ -201,7 +236,8 @@ export class Choreography extends cdk.Construct {
     this.events = props.events;
     this.stateMachine = new StateMachine(this, "StateMachine", {
       definition: props.definition,
-      stateMachineType: StateMachineType.STANDARD
+      stateMachineType: StateMachineType.STANDARD,
+      timeout: props.timeout
     });
   }
 

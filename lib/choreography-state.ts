@@ -61,8 +61,9 @@ export class ChoreographyState extends CallAwsService {
         }
       },
       iamResources: [builder.taskTokenTable.tableArn],
-      iamAction: "dynamodb:updateItem"
+      iamAction: "dynamodb:updateItem",
     });
+    this.addRetry();
   }
 }
 
